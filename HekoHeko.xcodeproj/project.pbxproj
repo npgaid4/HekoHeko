@@ -12,6 +12,7 @@
 		AB8DF3F52633FEFA007D31B1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB8DF3F42633FEFA007D31B1 /* Assets.xcassets */; };
 		AB8DF3F82633FEFA007D31B1 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AB8DF3F62633FEFA007D31B1 /* Main.storyboard */; };
 		AB8DF3FB2633FEFA007D31B1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = AB8DF3FA2633FEFA007D31B1 /* main.m */; };
+		ABCE535F2635B5E90050FF42 /* Wins.m in Sources */ = {isa = PBXBuildFile; fileRef = ABCE535E2635B5E90050FF42 /* Wins.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,8 @@
 		AB8DF3F92633FEFA007D31B1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB8DF3FA2633FEFA007D31B1 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		AB8DF3FC2633FEFA007D31B1 /* HekoHeko.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HekoHeko.entitlements; sourceTree = "<group>"; };
+		ABCE535E2635B5E90050FF42 /* Wins.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Wins.m; sourceTree = "<group>"; };
+		ABCE53612635BBE50050FF42 /* Wins.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Wins.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +69,8 @@
 				AB8DF3F92633FEFA007D31B1 /* Info.plist */,
 				AB8DF3FA2633FEFA007D31B1 /* main.m */,
 				AB8DF3FC2633FEFA007D31B1 /* HekoHeko.entitlements */,
+				ABCE535E2635B5E90050FF42 /* Wins.m */,
+				ABCE53612635BBE50050FF42 /* Wins.h */,
 			);
 			path = HekoHeko;
 			sourceTree = "<group>";
@@ -140,6 +145,7 @@
 			files = (
 				AB8DF3F32633FEF8007D31B1 /* ViewController.m in Sources */,
 				AB8DF3FB2633FEFA007D31B1 /* main.m in Sources */,
+				ABCE535F2635B5E90050FF42 /* Wins.m in Sources */,
 				AB8DF3F02633FEF8007D31B1 /* AppDelegate.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
