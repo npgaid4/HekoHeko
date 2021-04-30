@@ -55,7 +55,26 @@
     CGFloat mY = CGRectGetMidY(window);
     unsigned int displayCount;
     CGGetActiveDisplayList(MAX_DISPLAYS, displays, &displayCount);
+    NSLog(@"x %f y %f",mX,mY);
+    CGPoint movePoint;
+    movePoint.x = mX;
+    movePoint.y = mY;
     
+    CGEventRef ourEvent = CGEventCreate(NULL);
+    CGPoint currentPoint = CGEventGetLocation(ourEvent);
+    CFRelease(ourEvent);
+    NSLog(@"Location? x= %f, y = %f", (float)currentPoint.x, (float)currentPoint.y);
+    
+    int moveCount = 3;
+    
+    for(int i = 0;i < moveCount;i++){
+        CGDisplayMoveCursorToPoint(0, movePoint);
+        movePoint.x = movePoint.x + 10;
+        CGDisplayMoveCursorToPoint(0, movePoint);
+        movePoint.x = movePoint.x - 10;
+    }
+    
+    CGDisplayMoveCursorToPoint(0, (CGPoint)currentPoint);
 
     
     
