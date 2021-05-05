@@ -156,13 +156,6 @@
                 <customObject id="Ady-hI-5gd" userLabel="First Responder" customClass="NSResponder" sceneMemberID="firstResponder"/>
                 <menu id="qeg-6L-Dmc">
                     <items>
-                        <menuItem isSeparatorItem="YES" id="wGQ-zM-X7S"/>
-                        <menuItem title="タイマー停止" id="mUA-0x-7Bk">
-                            <modifierMask key="keyEquivalentModifierMask"/>
-                            <connections>
-                                <action selector="stopTimer:" target="Voe-Tx-rLC" id="Phm-lY-Dhx"/>
-                            </connections>
-                        </menuItem>
                         <menuItem isSeparatorItem="YES" id="5n3-oE-W2E"/>
                         <menuItem title="終了" id="Age-Pd-nh5">
                             <modifierMask key="keyEquivalentModifierMask"/>

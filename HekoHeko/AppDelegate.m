@@ -27,18 +27,23 @@
     NSInteger enableIndex;
     CGDirectDisplayID displays[MAX_DISPLAYS];
     NSTimer *tm;
-    unsigned int timerMinutes;
-    NSTextField *label;
+    unsigned int timerMinutes, previousTimerMinutes;
+    NSTextField *label, *menus;
     CGPoint movePoint;
-    BOOL isTimer;
-    NSSwitch *timerOnOff;
+    BOOL isSelectApp;
+    NSButton *timerOnOff;
+    BOOL isDirty;
+    int menuOffset;
+    
     
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     // Insert code here to initialize your application
-    timerMinutes = 1;
-    isTimer = YES;
+    timerMinutes = previousTimerMinutes = 1;
+    isSelectApp = NO;
+    movePoint.x = 0;
+    movePoint.y = 0;
     [self setupStatusItem];
 }
 
@@ -47,86 +52,91 @@
     // Insert code here to tear down your application
 }
 
-- (IBAction)stopTimer:(NSMenuItem *)sender {
-    if([tm isValid]){
-        [tm invalidate];
-        isTimer = NO;
-    }
-}
 
 /*
  menu を選択したとき実行される関数
  */
 - (void)menuAction:(NSMenuItem*)sender {
-    // meunのチェックマークを消す
-    NSArray *menuitems = self.statusMenu.itemArray;
-    for(id n in menuitems){
-        [n setState:NSControlStateValueOff];
-    }
- 
-    [sender state] == NSControlStateValueOn ? [sender setState:NSControlStateValueOff]: [sender setState:NSControlStateValueOn];
+    
+    NSMenuItem *prev = [self.statusMenu itemAtIndex:enableIndex];
 
-    enableIndex = [self.statusMenu indexOfItem:sender];
-    CGRect window = wins[enableIndex].bounds;
-    CGFloat mX = CGRectGetMidX(window);
-    CGFloat mY = CGRectGetMidY(window);
-    unsigned int displayCount;
-    CGGetActiveDisplayList(MAX_DISPLAYS, displays, &displayCount);
-    NSLog(@"x %f y %f",mX,mY);
-    
-    movePoint.x = mX;
-    movePoint.y = mY;
-    
+    if(enableIndex != [self.statusMenu indexOfItem:sender]){
+        [prev setState:NSControlStateValueOff];
+        [sender setState:NSControlStateValueOn];
+        enableIndex = [self.statusMenu indexOfItem:sender];
+        CGRect window = wins[enableIndex - menuOffset].bounds;
+        CGFloat mX = CGRectGetMidX(window);
+        CGFloat mY = CGRectGetMidY(window);
+        unsigned int displayCount;
+        CGGetActiveDisplayList(MAX_DISPLAYS, displays, &displayCount);
+        NSLog(@"x %f y %f",mX,mY);
+        
+        movePoint.x = mX;
+        movePoint.y = mY;
+        isSelectApp = YES; // it will change the timer setting.
+        [self timerSetting];
+    }else{
+        [prev setState:NSControlStateValueOff];
+        isSelectApp = NO;
+        if([tm isValid]){
+            [tm invalidate];
+            NSLog(@"タイマー停止");
+        }
+
+    }
 }
 
 -(void)moveCursor {
     int moveCount = 2;
-    
+    NSLog(@"タイマー処理開始");
     CGEventRef ourEvent = CGEventCreate(NULL);
     CGPoint currentPoint = CGEventGetLocation(ourEvent);
     CFRelease(ourEvent);
-    NSLog(@"Location? x= %f, y = %f", (float)currentPoint.x, (float)currentPoint.y);
+    
+    [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.5f]];
+    
+    CGEventRef ourEvent2 = CGEventCreate(NULL);
+    CGPoint currentPoint2 = CGEventGetLocation(ourEvent2);
+    CFRelease(ourEvent2);
+    
+    NSLog(@"current1 x = %f y = %f",currentPoint.x,currentPoint.y);
+    NSLog(@"current2 x = %f y = %f",currentPoint2.x,currentPoint2.y);
 
-    for(int i = 0;i < moveCount;i++){
-        CGDisplayMoveCursorToPoint(0, movePoint);
-        sleep(1);
-        movePoint.x = movePoint.x + 10;
-        CGDisplayMoveCursorToPoint(0, movePoint);
-        sleep(1);
-        movePoint.x = movePoint.x - 10;
+    // mouse が操作されていないときだけやる
+    if(currentPoint.x == currentPoint2.x && currentPoint.y == currentPoint2.y){
+        NSLog(@"mouse移動 x = %f y = %f",movePoint.x,movePoint.y);
+        for(int i = 0;i < moveCount;i++){
+            CGDisplayMoveCursorToPoint(0, movePoint);
+            [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.5f]];
+            movePoint.x = movePoint.x + 10;
+            CGDisplayMoveCursorToPoint(0, movePoint);
+            [[NSRunLoop currentRunLoop] runUntilDate:[NSDate dateWithTimeIntervalSinceNow:0.5f]];
+            movePoint.x = movePoint.x - 10;
+        }
+        
+        CGDisplayMoveCursorToPoint(0, (CGPoint)currentPoint);
     }
-    
-    CGDisplayMoveCursorToPoint(0, (CGPoint)currentPoint);
-
-    NSLog(@"処理終了");
+    NSLog(@"タイマー処理終了");
 }
 
--(void)updateMenuText {
-    
-}
 
 -(void)getSliderValue:(NSSlider*)sender {
     timerMinutes =  (unsigned int)[sender floatValue];
-    NSString *timerText = [[NSString alloc] initWithFormat:@"タイマー値: %d 分", timerMinutes];
-    [label setStringValue:timerText];
-    
-}
 
--(void)getTimerSwitch:(NSSwitch*)sender {
-    if([timerOnOff state] == NSControlStateValueOn){
-        [timerOnOff setState:NSControlStateValueOff];
-        isTimer = NO;
+    if(timerMinutes != previousTimerMinutes){
+        isDirty = YES;
     }else{
-        [timerOnOff setState:NSControlStateValueOn];
-        isTimer = YES;
+        isDirty = NO; // 前回メニューを閉じたときと同じ値ならタイマー変更しない
     }
     
+    NSString *timerText = [[NSString alloc] initWithFormat:@"タイマー値: %d 分", timerMinutes];
+    [label setStringValue:timerText];
 }
 
 /*
    ステータスバーに表示するmenuを作成
  */
-- (void)setupStatusItem {
+-(void)setupStatusItem {
     
     wins = [[NSMutableArray alloc]init];
     NSArray *menuNames = [self getWindowList];
@@ -136,36 +146,12 @@
         for(int i = 0;i < menuNames.count;i++){
             NSLog(@"%u %@",i, menuNames[i]);
             NSMenuItem *menuItem = [[NSMenuItem alloc]initWithTitle:[wins[i] appName] action:@selector(menuAction:) keyEquivalent:@""];
-            [self.statusMenu insertItem:menuItem atIndex:[self.statusMenu numberOfItems] - 4];
+            [self.statusMenu insertItem:menuItem atIndex:[self.statusMenu numberOfItems] - 2];
         }
 
     }
     
-    timerOnOff = [[NSSwitch alloc]initWithFrame:NSMakeRect(0, 0, 50, 30)];
-    [timerOnOff setState:NSControlStateValueOff];
-    [timerOnOff setAction:@selector(getTimerSwitch:)];
-    [timerOnOff setEnabled:YES];
-    
-    NSMenuItem *timerSwitch = [[NSMenuItem alloc]init];
-    [timerSwitch setView:timerOnOff];
-    [timerSwitch setTarget:self];
-    [self.statusMenu insertItem: timerSwitch atIndex:0];
-    
-    
-    
-    label = [[NSTextField alloc]initWithFrame:NSMakeRect(0, 0, 120, 20)];
-    NSString *timerText = [[NSString alloc] initWithFormat:@"タイマー値: %d 分", timerMinutes];
-    [label setStringValue:timerText];
-    [label setDrawsBackground:NO];
-    [label setBordered:NO];
-    [label setEditable:NO];
-    [label setSelectable:NO];
-    
-    NSMenuItem *sliderText = [[NSMenuItem alloc]init];
 
-    [sliderText setView:label];
-    [self.statusMenu insertItem: sliderText atIndex:[self.statusMenu numberOfItems] - 2];
-    
     NSSlider *slider = [[NSSlider alloc]init];
     [slider setFrameSize:NSMakeSize(120, 30)];
     [slider setMinValue:1];
@@ -180,8 +166,36 @@
     [sliderMenu setTitle:@"slider1"];
     [sliderMenu setView:slider];
     
-    [self.statusMenu insertItem:sliderMenu atIndex:[self.statusMenu numberOfItems] - 2];
+    [self.statusMenu insertItem:sliderMenu atIndex:0];
     
+    label = [[NSTextField alloc]initWithFrame:NSMakeRect(0, 0, 120, 20)];
+    NSString *timerText = [[NSString alloc] initWithFormat:@"タイマー値: %d 分", timerMinutes];
+    [label setStringValue:timerText];
+    [label setDrawsBackground:NO];
+    [label setBordered:NO];
+    [label setEditable:NO];
+    [label setSelectable:NO];
+    
+    NSMenuItem *sliderText = [[NSMenuItem alloc]init];
+
+    [sliderText setView:label];
+    [self.statusMenu insertItem: sliderText atIndex:0];
+    //横棒
+    [self.statusMenu insertItem:[NSMenuItem separatorItem] atIndex:2];
+    
+    NSTextField *atxt = [[NSTextField alloc]initWithFrame:NSMakeRect(0, 0, 120, 20)];
+    [atxt setStringValue:@"起動中アプリ一覧"];
+    [atxt setDrawsBackground:NO];
+    [atxt setBordered:NO];
+    [atxt setEditable:NO];
+    [atxt setSelectable:NO];
+    
+    NSMenuItem *aText = [[NSMenuItem alloc]init];
+
+    [aText setView:atxt];
+    [self.statusMenu insertItem: aText atIndex:3];
+
+    menuOffset = 4; //winsのindexとmenuIndexをあわせるためのアプリ一覧までのoffset数
     
     NSStatusBar *systemStatusBar = [NSStatusBar systemStatusBar];
     _statusItem = [systemStatusBar statusItemWithLength:NSVariableStatusItemLength];
@@ -192,15 +206,23 @@
     
 }
 
--(void)menuDidClose:(NSMenu*)aMenu{
+-(void)timerSetting{
     if([tm isValid]){
         [tm invalidate];
+        NSLog(@"タイマー停止");
     }
-    if(isTimer){
-        NSLog(@"タイマー値 %d",timerMinutes);
-        tm = [NSTimer timerWithTimeInterval:(timerMinutes * MINUTES) target:self selector:@selector(moveCursor) userInfo:nil repeats:YES];
-        [[NSRunLoop currentRunLoop] addTimer:tm forMode:NSRunLoopCommonModes];
+
+    NSLog(@"タイマー開始 タイマー値 %d",timerMinutes);
+    tm = [NSTimer timerWithTimeInterval:(timerMinutes * MINUTES) target:self selector:@selector(moveCursor) userInfo:nil repeats:YES];
+    [[NSRunLoop currentRunLoop] addTimer:tm forMode:NSRunLoopCommonModes];
+}
+
+-(void)menuDidClose:(NSMenu*)aMenu{
+
+    if(isDirty && isSelectApp){
+        [self timerSetting];
     }
+    previousTimerMinutes = timerMinutes;
 }
 
 /*
